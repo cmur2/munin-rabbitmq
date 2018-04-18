@@ -2,19 +2,6 @@
  RabbitMQ Munin Plug-Ins
 =========================
 
-Screenshots
-===========
-
-.. image:: http://cloud.github.com/downloads/ask/rabbitmq-munin/rabbitmq-munin-connections.png
-
-.. image:: http://cloud.github.com/downloads/ask/rabbitmq-munin/rabbitmq-munin-consumers.png
-
-.. image:: http://cloud.github.com/downloads/ask/rabbitmq-munin/rabbitmq-munin-list_queues.png
-
-.. image:: http://cloud.github.com/downloads/ask/rabbitmq-munin/rabbitmq-munin-queue-memory.png
-
-.. image:: http://cloud.github.com/downloads/ask/rabbitmq-munin/rabbitmq-munin-unacknowledged.png
-
 Installation
 ============
 
@@ -30,19 +17,16 @@ root by changing the plug-in configuration file (on debian that is
     [rabbitmq_connections]
     user root
 
-    [rabbitmq_consumers]
+    [rabbitmq_queue_consumers]
     user root
 
-    [rabbitmq_messages]
-    user root
-
-    [rabbitmq_messages_unacknowledged]
-    user root
-
-    [rabbitmq_messages_uncommitted]
+    [rabbitmq_queue_disk]
     user root
 
     [rabbitmq_queue_memory]
+    user root
+
+    [rabbitmq_queue_messages]
     user root
 
 
@@ -52,17 +36,14 @@ Using a Custom Virtual Host
 You can set the name of virtual host by changing the plug-in configuration
 file (on debian that is ``/etc/munin/plugin-conf.d``)::
 
-    [rabbitmq_consumers]
+    [rabbitmq_queue_consumers]
     env.vhost vhostname
 
-    [rabbitmq_messages]
-    env.vhost vhostname
-
-    [rabbitmq_messages_unacknowledged]
-    env.vhost vhostname
-
-    [rabbitmq_messages_uncommitted]
+    [rabbitmq_queue_disk]
     env.vhost vhostname
 
     [rabbitmq_queue_memory]
+    env.vhost vhostname
+
+    [rabbitmq_queue_messages]
     env.vhost vhostname
