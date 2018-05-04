@@ -5,7 +5,7 @@
 # Usage: Link or copy into /etc/munin/node.d/
 #
 # Parameters
-#     env.vhost <AMQ virtual host>
+#     env.url <url of management plugin>
 #     env.queue_warn <warning queuesize>
 #     env.queue_crit <critical queuesize>
 #
@@ -28,11 +28,9 @@ fi
 # If run with the "config"-parameter, give out information on how the
 # graphs should look.
 
-HOME=/tmp/
-VHOST=${vhost:-"/"}
-QUEUES=$(HOME=$HOME rabbitmqctl list_queues -p $VHOST name | grep -v '^Listing' | grep -v 'done\.$' | grep -v "\.\.\." | sed 's/[^a-z0-9]\+/_/g')
-
 if [ "$1" = "config" ]; then
+	QUEUES=$(curl -sS $url/api/queues | jq -r '.[] | .name' | sed 's/[^a-z0-9]\+/_/g')
+
 	QUEUE_WARN=${queue_warn:-10000}
 	QUEUE_CRIT=${queue_crit:-20000}
 
@@ -40,7 +38,7 @@ if [ "$1" = "config" ]; then
 	# one machine answer for several)
 
 	# The title of the graph
-	echo "graph_title RabbitMQ $VHOST list_queues"
+	echo "graph_title RabbitMQ list_queues"
 	# Arguments to "rrdtool graph". In this case, tell it that the
 	# lower limit of the graph is '0', and that 1k=1000 (not 1024)
 	echo 'graph_args --base 1000 -l 0'
@@ -69,25 +67,25 @@ fi
 # "value" subfield for every data field.
 
 IFS=$'\n'
-for line in $(HOME=$HOME rabbitmqctl list_queues -p $VHOST name messages messages_ready messages_unacknowledged messages_persistent | grep -v "^Listing" | grep -v "done.$" | grep -v "\.\.\."); do
-	echo -n "$line" | cut -f1 | tr -d '\n' | sed 's/[^a-z0-9]\+/_/g'
+for line in $(curl -sS $url/api/queues | jq -c -r '.[] | {name: .name, messages: .messages, messages_ready: .messages_ready, messages_unacknowledged: .messages_unacknowledged, messages_persistent: .messages_persistent}'); do
+	echo -n "$line" | jq -j '.name' | sed 's/[^a-z0-9]\+/_/g'
 	echo -n ".total.value "
-	echo -n "$line" | cut -f2 | tr -d '\n'
+	echo -n "$line" | jq -j '.messages'
 	echo ""
 
-	echo -n "$line" | cut -f1 | tr -d '\n' | sed 's/[^a-z0-9]\+/_/g'
+	echo -n "$line" | jq -j '.name' | sed 's/[^a-z0-9]\+/_/g'
 	echo -n ".ready.value "
-	echo -n "$line" | cut -f3 | tr -d '\n'
+	echo -n "$line" | jq -j '.messages_ready'
 	echo ""
 
-	echo -n "$line" | cut -f1 | tr -d '\n' | sed 's/[^a-z0-9]\+/_/g'
+	echo -n "$line" | jq -j '.name' | sed 's/[^a-z0-9]\+/_/g'
 	echo -n ".unacknowledged.value "
-	echo -n "$line" | cut -f4 | tr -d '\n'
+	echo -n "$line" | jq -j '.messages_unacknowledged'
 	echo ""
 
-	echo -n "$line" | cut -f1 | tr -d '\n' | sed 's/[^a-z0-9]\+/_/g'
+	echo -n "$line" | jq -j '.name' | sed 's/[^a-z0-9]\+/_/g'
 	echo -n ".persistent.value "
-	echo -n "$line" | cut -f5 | tr -d '\n'
+	echo -n "$line" | jq -j '.messages_persistent'
 	echo ""
 done
 IFS=$' \t\n'

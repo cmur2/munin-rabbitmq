@@ -5,6 +5,7 @@
 # Usage: Link or copy into /etc/munin/node.d/
 #
 # Parameters
+#     env.url <url of management plugin>
 #     env.conn_warn <warning connections>
 #     env.conn_crit <critical connections>
 #
@@ -24,14 +25,12 @@ if [ "$1" = "autoconf" ]; then
 	exit 0
 fi
 
-HOME=/tmp/
-
 # If run with the "config"-parameter, give out information on how the
 # graphs should look.
 
 if [ "$1" = "config" ]; then
-	CONN_WARN=${queue_warn:-500}
-	CONN_CRIT=${queue_crit:-1000}
+	CONN_WARN=${conn_warn:-500}
+	CONN_CRIT=${conn_crit:-1000}
 
 	# The host name this plugin is for. (Can be overridden to have
 	# one machine answer for several)
@@ -63,6 +62,6 @@ fi
 # real work - i.e. display the data. Almost always this will be
 # "value" subfield for every data field.
 
-echo "total.value $(HOME=$HOME rabbitmqctl list_connections | grep -v "^Listing" | grep -v "done.$" | grep -v "\.\.\." | wc -l)"
-echo "secure.value $(HOME=$HOME rabbitmqctl list_connections ssl | grep -v "^Listing" | grep -v "done.$" | grep -v "\.\.\." | grep "true" | wc -l)"
-echo "insecure.value $(HOME=$HOME rabbitmqctl list_connections ssl | grep -v "^Listing" | grep -v "done.$" | grep -v "\.\.\." | grep "false" | wc -l)"
+echo "total.value $(curl -sS $url/api/connections | jq -r '.[] | {}' | wc -l)"
+echo "secure.value $(curl -sS $url/api/connections | jq -r '.[] | select(.ssl == true) | {}' | wc -l)"
+echo "insecure.value $(curl -sS $url/api/connections | jq -r '.[] | select(.ssl == false or .ssl == null) | {}' | wc -l)"

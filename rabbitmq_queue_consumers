@@ -5,7 +5,7 @@
 # Usage: Link or copy into /etc/munin/node.d/
 #
 # Parameters
-#     env.vhost <AMQ virtual host>
+#     env.url <url of management plugin>
 #     env.queue_warn <warning queuesize>
 #     env.queue_crit <critical queuesize>
 #
@@ -28,11 +28,9 @@ fi
 # If run with the "config"-parameter, give out information on how the
 # graphs should look.
 
-HOME=/tmp/
-VHOST=${vhost:-"/"}
-QUEUES=$(HOME=$HOME rabbitmqctl list_queues -p $VHOST name | grep -v '^Listing' | grep -v 'done\.$' | grep -v "\.\.\." | sed 's/[^a-z0-9]\+/_/g')
-
 if [ "$1" = "config" ]; then
+	QUEUES=$(curl -sS $url/api/queues | jq -r '.[] | .name' | sed 's/[^a-z0-9]\+/_/g')
+
 	QUEUE_WARN=${queue_warn:-100}
 	QUEUE_CRIT=${queue_crit:-500}
 
@@ -40,7 +38,7 @@ if [ "$1" = "config" ]; then
 	# one machine answer for several)
 
 	# The title of the graph
-	echo "graph_title RabbitMQ $VHOST consumers"
+	echo "graph_title RabbitMQ consumers"
 	# Arguments to "rrdtool graph". In this case, tell it that the
 	# lower limit of the graph is '0', and that 1k=1000 (not 1024)
 	echo 'graph_args --base 1000 -l 0'
@@ -69,10 +67,10 @@ fi
 # "value" subfield for every data field.
 
 IFS=$'\n'
-for line in $(HOME=$HOME rabbitmqctl list_queues -p $VHOST name consumers | grep -v "^Listing" | grep -v "done.$" | grep -v "\.\.\."); do
-	echo -n "$line" | cut -f1 | tr -d '\n' | sed 's/[^a-z0-9]\+/_/g'
+for line in $(curl -sS $url/api/queues | jq -c -r '.[] | {name: .name, consumers: .consumers}'); do
+	echo -n "$line" | jq -j '.name' | sed 's/[^a-z0-9]\+/_/g'
 	echo -n ".value "
-	echo -n "$line" | cut -f2 | tr -d '\n'
+	echo -n "$line" | jq -j '.consumers'
 	echo ""
 done
 IFS=$' \t\n'
